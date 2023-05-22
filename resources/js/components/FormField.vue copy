@@ -1,0 +1,87 @@
+<template>
+  <default-field :field="field" :errors="errors" :show-help-text="showHelpText">
+    <template slot="field">
+      
+       <flatPickr v-model="value" :config="config" :class="field.class" @on-change="onChange" />
+    </template>
+  </default-field>
+</template>
+
+<script>
+import { FormField, HandlesValidationErrors } from 'laravel-nova';
+import flatPickr from 'vue-flatpickr-component';
+import 'flatpickr/dist/flatpickr.css';
+import { DateTime } from 'luxon';
+
+export default {
+  mixins: [FormField, HandlesValidationErrors],
+
+  props: ['resourceName', 'resourceId', 'field'],
+
+  components: {
+    flatPickr
+  },
+
+  methods: {
+    /*
+     * Set the initial, internal value for the field.
+     */
+    setInitialValue() {
+      this.value = this.field.value || ''
+    },
+
+    /**
+     * Fill the given FormData object with the field's internal value.
+     */
+    fill(formData) {
+      formData.append(this.field.attribute, this.value || '');
+
+       this.setInputValue(
+          DateTime.fromISO(this.value, { zone: this.cValueTimezone })
+            .setZone(this.cValueTimezone)
+        );
+    },
+    onChange: function(selectedDates, dateStr, instance) {
+        //...
+        console.log(selectedDates, dateStr, instance);
+        console.log(this.cValueTimezone);
+        console.log(DateTime.fromISO(this.value, { zone: this.cValueTimezone })
+            .setZone(this.cValueTimezone)
+            );
+    },
+    setInputValue (value) {
+      this.value = this.toInputFormat(value)
+      //this.inputValue = this.toInputFormat(value)
+    },
+    toInputFormat (value) {
+      const formattedDate = [value.toISODate()]
+      if (this.cInputTimeFormat) {
+        formattedDate.push(value.toFormat(this.cInputTimeFormat))
+      }
+
+      return formattedDate.join('T')
+    },
+  },
+  computed: {
+    isEnableTime() {
+      return this.field.fieldType === 'datetime';
+    },
+    config() {
+     return {
+      enableTime: this.isEnableTime,
+      dateFormat: this.field.dateFormat,
+     }
+    },
+     cValueTimezone() {
+      return 'Asia/Riyadh';//Nova.config('userTimezone')
+    },
+    cInputTimeFormat () {
+      if (this.cInputTime) {
+        return this.cInputSeconds ? 'HH:mm' : 'HH:mm:ss'
+      } else {
+        return null
+      }
+    },
+  },
+}
+</script>
